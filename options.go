@@ -83,6 +83,7 @@ type ClientOptions struct {
 	MessageChannelDepth     uint
 	ResumeSubs              bool
 	HTTPHeaders             http.Header
+	WebsocketOptions        *WebsocketOptions
 }
 
 // NewClientOptions will create a new ClientClientOptions type with some
@@ -122,6 +123,7 @@ func NewClientOptions() *ClientOptions {
 		WriteTimeout:            0, // 0 represents timeout disabled
 		ResumeSubs:              false,
 		HTTPHeaders:             make(map[string][]string),
+		WebsocketOptions:        &WebsocketOptions{},
 	}
 	return o
 }
@@ -196,7 +198,7 @@ func (o *ClientOptions) SetCredentialsProvider(p CredentialsProvider) *ClientOpt
 // when this client connects to an MQTT broker. By setting this flag, you are
 // indicating that no messages saved by the broker for this client should be
 // delivered. Any messages that were going to be sent by this client before
-// diconnecting previously but didn't will not be sent upon connecting to the
+// disconnecting previously but didn't will not be sent upon connecting to the
 // broker.
 func (o *ClientOptions) SetCleanSession(clean bool) *ClientOptions {
 	o.CleanSession = clean
@@ -207,6 +209,7 @@ func (o *ClientOptions) SetCleanSession(clean bool) *ClientOptions {
 // each QoS level. By default, this value is true. If set to false,
 // this flag indicates that messages can be delivered asynchronously
 // from the client to the application and possibly arrive out of order.
+// Specifically, the message handler is called in its own go routine.
 func (o *ClientOptions) SetOrderMatters(order bool) *ClientOptions {
 	o.Order = order
 	return o
@@ -313,14 +316,14 @@ func (o *ClientOptions) SetReconnectingHandler(cb ReconnectHandler) *ClientOptio
 }
 
 // SetWriteTimeout puts a limit on how long a mqtt publish should block until it unblocks with a
-// timeout error. A duration of 0 never times out. Default 30 seconds
+// timeout error. A duration of 0 never times out. Default never times out
 func (o *ClientOptions) SetWriteTimeout(t time.Duration) *ClientOptions {
 	o.WriteTimeout = t
 	return o
 }
 
 // SetConnectTimeout limits how long the client will wait when trying to open a connection
-// to an MQTT server before timing out and erroring the attempt. A duration of 0 never times out.
+// to an MQTT server before timing out. A duration of 0 never times out.
 // Default 30 seconds. Currently only operational on TCP/TLS connections.
 func (o *ClientOptions) SetConnectTimeout(t time.Duration) *ClientOptions {
 	o.ConnectTimeout = t
@@ -353,7 +356,7 @@ func (o *ClientOptions) SetConnectRetryInterval(t time.Duration) *ClientOptions 
 // in the event of a failure (when true the token returned by the Connect function will
 // not complete until the connection is up or it is cancelled)
 // If ConnectRetry is true then subscriptions should be requested in OnConnect handler
-// Setting this to TRUE permits mesages to be published before the connection is established
+// Setting this to TRUE permits messages to be published before the connection is established
 func (o *ClientOptions) SetConnectRetry(a bool) *ClientOptions {
 	o.ConnectRetry = a
 	return o
@@ -370,5 +373,11 @@ func (o *ClientOptions) SetMessageChannelDepth(s uint) *ClientOptions {
 // opening handshake.
 func (o *ClientOptions) SetHTTPHeaders(h http.Header) *ClientOptions {
 	o.HTTPHeaders = h
+	return o
+}
+
+// SetWebsocketOptions sets the additional websocket options used in a WebSocket connection
+func (o *ClientOptions) SetWebsocketOptions(w *WebsocketOptions) *ClientOptions {
+	o.WebsocketOptions = w
 	return o
 }
